@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 # Training parameters
-n_epochs = 3
+n_epochs = 20
 batch_size_train = 64
 batch_size_test = 1000
 learning_rate = 0.01
@@ -55,15 +55,18 @@ print(example_targets[0:9])
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(28*28, 100)
-        self.fc2 = nn.Linear(100, 10)
+        neurons = 20
+        self.fc1 = nn.Linear(28*28, neurons)
+        self.fc2 = nn.Linear(neurons, neurons)
+        self.fc3 = nn.Linear(neurons, 10)
         self.sigmoid = nn.Sigmoid()
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x: torch.Tensor):
         x = x.view(-1, 28*28)  # Flatten the input
         x = self.sigmoid(self.fc1(x))
-        x = self.fc2(x)
+        x = self.sigmoid(self.fc2(x))
+        x = self.fc3(x)
         x = self.softmax(x)
         return x
 
@@ -72,6 +75,7 @@ optimizer = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
 
 
 def train(epoch):
+    total_loss = 0
     network.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
@@ -79,9 +83,12 @@ def train(epoch):
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
+        total_loss += loss.item()
         if batch_idx % log_interval == 0:
             print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ' \
                   f'({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
+            
+    return total_loss / len(train_loader.dataset)
 
 def test():
     network.eval()
@@ -97,12 +104,37 @@ def test():
     test_loss /= len(test_loader.dataset)
     print(f'\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} ' \
           f'({100. * correct / len(test_loader.dataset):.0f}%)\n')
+    return test_loss
 
+train_losses = []
+test_losses = []
 for epoch in range(1, n_epochs + 1):
-    train(epoch)
-    test()
+    loss = train(epoch)
+    train_losses.append(loss)
+    loss = test()
+    test_losses.append(loss)
 
 print("Training complete")
+
+# Plot the loss over the epochs in two subplots
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+# Plot training loss
+ax1.plot(train_losses, label='Train Loss')
+ax1.set_title('Training Loss')
+ax1.set_xlabel('Epoch')
+ax1.set_ylabel('Loss')
+ax1.legend()
+
+# Plot test loss
+ax2.plot(test_losses, label='Test Loss')
+ax2.set_title('Test Loss')
+ax2.set_xlabel('Epoch')
+ax2.set_ylabel('Loss')
+ax2.legend()
+
+plt.tight_layout()
+plt.show()
 
 # Get a batch of test data
 examples = enumerate(test_loader)
