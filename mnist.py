@@ -8,8 +8,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 # Training parameters
-n_epochs = 100
-batch_size_train = 64
+n_epochs = 250
+batch_size_train = 128
 batch_size_test = 1000
 learning_rate = 0.01
 momentum = 0.5
@@ -56,7 +56,7 @@ print(example_targets[0:9])
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        neurons = 500
+        neurons = 250
         self.fc1 = nn.Linear(28*28, neurons)
         self.fc2 = nn.Linear(neurons, neurons)
         self.fc3 = nn.Linear(neurons, 10)
@@ -135,6 +135,7 @@ ax2.set_title('Test Loss')
 ax2.set_xlabel('Epoch')
 ax2.set_ylabel('Loss')
 ax2.legend()
+
 
 plt.tight_layout()
 plt.show()
