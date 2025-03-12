@@ -6,14 +6,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib
 
-# Set matplotlib backend
-current_backend = matplotlib.get_backend()
-print(f"Current matplotlib backend: {current_backend}")
-matplotlib.use('TkAgg')
-print(f"Changed matplotlib backend to: {matplotlib.get_backend()}")
+# Verify matplotlib backend is TkAgg
+backend = matplotlib.get_backend()
+assert backend == "tkagg", f"Backend is {backend}, not TkAgg :("
 
 # Training parameters
-n_epochs = 5
+n_epochs = 500
 batch_size_train = 256
 batch_size_test = 1000
 learning_rate = 0.01
