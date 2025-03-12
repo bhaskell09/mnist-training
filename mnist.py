@@ -1,62 +1,49 @@
 import torch
 import torchvision
-
 import matplotlib.pyplot as plt
-
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import matplotlib
+
+# Set matplotlib backend
+current_backend = matplotlib.get_backend()
+print(f"Current matplotlib backend: {current_backend}")
+matplotlib.use('TkAgg')
+print(f"Changed matplotlib backend to: {matplotlib.get_backend()}")
 
 # Training parameters
-n_epochs = 250
+n_epochs = 5
 batch_size_train = 256
 batch_size_test = 1000
 learning_rate = 0.01
 momentum = 0.5
 log_interval = 10
 
-random_seed = 1
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# Load MNIST dataset
 train_loader = torch.utils.data.DataLoader(
     torchvision.datasets.MNIST('./data/', train=True, download=True, 
         transform=torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize(
-                (0.1307,), (0.3081,))
+            torchvision.transforms.Normalize((0.1307,), (0.3081,))
         ])),
-    batch_size=batch_size_train, shuffle=True, num_workers=8)
+    batch_size=batch_size_train, shuffle=True, num_workers=2)
 
 test_loader = torch.utils.data.DataLoader(
     torchvision.datasets.MNIST('./data/', train=False, download=True,
         transform=torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize(
-                (0.1307,), (0.3081,))
+            torchvision.transforms.Normalize((0.1307,), (0.3081,))
         ])),
-    batch_size=batch_size_test, shuffle=True)
-examples = enumerate(test_loader)
-batch_idx, (example_data, example_targets) = next(examples)
+    batch_size=batch_size_test, shuffle=False)
 
-print(example_data.shape)
-print(example_targets.shape)
-print(example_targets[0:9])
-
-# fig = plt.figure()
-# for i in range(6):
-#   plt.subplot(2,3,i+1)
-#   plt.tight_layout()
-#   plt.imshow(example_data[i][0], cmap='gray', interpolation='none')
-#   plt.title("Ground Truth: {}".format(example_targets[i]))
-#   plt.xticks([])
-#   plt.yticks([])
-# plt.show()
-
+# Define Neural Network
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        neurons = 250
+        neurons = 50
         self.fc1 = nn.Linear(28*28, neurons)
         self.fc2 = nn.Linear(neurons, neurons)
         self.fc3 = nn.Linear(neurons, 10)
@@ -74,10 +61,11 @@ class Net(nn.Module):
 network = Net().to(device)
 optimizer = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
 
-
+# Training function
 def train(epoch):
-    total_loss = 0
     network.train()
+    total_loss = 0
+    correct = 0
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
@@ -86,12 +74,17 @@ def train(epoch):
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
-        if batch_idx % log_interval == 0:
-            print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ' \
-                  f'({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
-            
-    return total_loss / len(train_loader.dataset)
+        pred = output.argmax(dim=1, keepdim=True)
+        correct += pred.eq(target.view_as(pred)).sum().item()
 
+        if batch_idx % log_interval == 0:
+            print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} '
+                  f'({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
+
+    train_accuracy = 100. * correct / len(train_loader.dataset)
+    return total_loss / len(train_loader.dataset), train_accuracy
+
+# Testing function
 def test():
     network.eval()
     test_loss = 0
@@ -105,53 +98,78 @@ def test():
             correct += pred.eq(target.view_as(pred)).sum().item()
     
     test_loss /= len(test_loader.dataset)
-    print(f'\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} ' \
-          f'({100. * correct / len(test_loader.dataset):.0f}%)\n')
-    return test_loss
+    test_accuracy = 100. * correct / len(test_loader.dataset)
+    
+    print(f'\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} '
+          f'({test_accuracy:.2f}%)\n')
+    
+    return test_loss, test_accuracy
 
+# Training loop
 train_losses = []
 test_losses = []
+train_accuracies = []
+test_accuracies = []
+
 for epoch in range(1, n_epochs + 1):
-    loss = train(epoch)
-    train_losses.append(loss)
-    loss = test()
-    test_losses.append(loss)
+    train_loss, train_acc = train(epoch)
+    test_loss, test_acc = test()
+    
+    train_losses.append(train_loss)
+    test_losses.append(test_loss)
+    train_accuracies.append(train_acc)
+    test_accuracies.append(test_acc)
 
 print("Training complete")
 
-# Plot the loss over the epochs in two subplots
+# Plot loss over epochs
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-# Plot training loss
-ax1.plot(train_losses, label='Train Loss')
+ax1.plot(range(1, n_epochs + 1), train_losses, label='Train Loss')
 ax1.set_title('Training Loss')
 ax1.set_xlabel('Epoch')
 ax1.set_ylabel('Loss')
 ax1.legend()
 
-# Plot test loss
-ax2.plot(test_losses, label='Test Loss')
+ax2.plot(range(1, n_epochs + 1), test_losses, label='Test Loss')
 ax2.set_title('Test Loss')
 ax2.set_xlabel('Epoch')
 ax2.set_ylabel('Loss')
 ax2.legend()
 
+plt.tight_layout()
+plt.show()
+
+# Plot accuracy over epochs
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+ax1.plot(range(1, n_epochs + 1), train_accuracies, label='Train Accuracy')
+ax1.set_ylim([0, 100])
+ax1.set_title('Training Accuracy')
+ax1.set_xlabel('Epoch')
+ax1.set_ylabel('Accuracy (%)')
+ax1.legend()
+
+ax2.plot(range(1, n_epochs + 1), test_accuracies, label='Test Accuracy')
+ax2.set_ylim([0, 100])
+ax2.set_title('Test Accuracy')
+ax2.set_xlabel('Epoch')
+ax2.set_ylabel('Accuracy (%)')
+ax2.legend()
 
 plt.tight_layout()
 plt.show()
 
-# Get a batch of test data
+# Get a batch of test data and visualize predictions
 examples = enumerate(test_loader)
 _, (example_data, example_targets) = next(examples)
 
-# Get predictions from the trained model
 network.eval()
 with torch.no_grad():
     example_data, example_targets = example_data.to(device), example_targets.to(device)
     predictions = network(example_data[:10])
     predicted_labels = predictions.argmax(dim=1)
 
-# Plot the images with their predicted labels
 fig = plt.figure()
 for i in range(10):
     plt.subplot(2, 5, i+1)
