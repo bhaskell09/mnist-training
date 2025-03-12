@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 # Training parameters
-n_epochs = 50
+n_epochs = 100
 batch_size_train = 64
 batch_size_test = 1000
 learning_rate = 0.01
@@ -26,7 +26,7 @@ train_loader = torch.utils.data.DataLoader(
             torchvision.transforms.Normalize(
                 (0.1307,), (0.3081,))
         ])),
-    batch_size=batch_size_train, shuffle=True, num_workers=4)
+    batch_size=batch_size_train, shuffle=True, num_workers=5)
 
 test_loader = torch.utils.data.DataLoader(
     torchvision.datasets.MNIST('./data/', train=False, download=True,
@@ -56,7 +56,7 @@ print(example_targets[0:9])
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        neurons = 100
+        neurons = 500
         self.fc1 = nn.Linear(28*28, neurons)
         self.fc2 = nn.Linear(neurons, neurons)
         self.fc3 = nn.Linear(neurons, 10)
