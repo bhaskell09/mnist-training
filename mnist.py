@@ -9,7 +9,7 @@ import torch.optim as optim
 
 # Training parameters
 n_epochs = 250
-batch_size_train = 128
+batch_size_train = 256
 batch_size_test = 1000
 learning_rate = 0.01
 momentum = 0.5
@@ -26,7 +26,7 @@ train_loader = torch.utils.data.DataLoader(
             torchvision.transforms.Normalize(
                 (0.1307,), (0.3081,))
         ])),
-    batch_size=batch_size_train, shuffle=True, num_workers=5)
+    batch_size=batch_size_train, shuffle=True, num_workers=8)
 
 test_loader = torch.utils.data.DataLoader(
     torchvision.datasets.MNIST('./data/', train=False, download=True,
