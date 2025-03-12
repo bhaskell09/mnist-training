@@ -1,0 +1,2 @@
+sigmoid accuracy: 96.23%
+relu accruacy: 97.28%

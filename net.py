@@ -14,13 +14,13 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(28*28, neurons)
         self.fc2 = nn.Linear(neurons, neurons)
         self.fc3 = nn.Linear(neurons, 10)
-        self.sigmoid = nn.Sigmoid()
+        self.activation = nn.ReLU()
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x: torch.Tensor):
         x = x.view(-1, 28*28)  # Flatten the input
-        x = self.sigmoid(self.fc1(x))
-        x = self.sigmoid(self.fc2(x))
+        x = self.activation(self.fc1(x))
+        x = self.activation(self.fc2(x))
         x = self.fc3(x)
         x = self.softmax(x)
         return x

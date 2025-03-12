@@ -13,8 +13,8 @@ backend = matplotlib.get_backend()
 assert backend == "tkagg", f"Backend is {backend}, not TkAgg :("
 
 # Training parameters
-n_epochs = 25
-batch_size_train = 256
+n_epochs = 100
+batch_size_train = 512
 batch_size_test = 1000
 learning_rate = 0.001
 momentum = 0.5
@@ -29,7 +29,7 @@ train_loader = torch.utils.data.DataLoader(
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize((0.1307,), (0.3081,))
         ])),
-    batch_size=batch_size_train, shuffle=True, num_workers=2)
+    batch_size=batch_size_train, shuffle=True, num_workers=15)
 
 test_loader = torch.utils.data.DataLoader(
     torchvision.datasets.MNIST('./data/', train=False, download=True,
@@ -37,7 +37,7 @@ test_loader = torch.utils.data.DataLoader(
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize((0.1307,), (0.3081,))
         ])),
-    batch_size=batch_size_test, shuffle=False)
+    batch_size=batch_size_test, shuffle=True)
 
 
 network = Net().to(device)
@@ -93,7 +93,8 @@ train_losses = []
 test_losses = []
 train_accuracies = []
 test_accuracies = []
-
+best_test_loss = float('inf')
+no_improvement_counter = 0
 for epoch in range(1, n_epochs + 1):
     train_loss, train_acc = train(epoch)
     test_loss, test_acc = test()
@@ -103,20 +104,28 @@ for epoch in range(1, n_epochs + 1):
     train_accuracies.append(train_acc)
     test_accuracies.append(test_acc)
 
+    if test_loss < best_test_loss:
+        best_test_loss = test_loss
+        no_improvement_counter = 0
+        torch.save(network.state_dict(), "mnist_model_ReLU.pth")
+    else: 
+        no_improvement_counter += 1
+        print(f"No improvement in test loss for {no_improvement_counter} epochs.")
+        if no_improvement_counter >= 10:
+            print("Stopping early due to no improvement in test loss.")
+            break
 print("Training complete")
-
-torch.save(network.state_dict(), "mnist_model.pth")
 
 # Plot loss over epochs
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-ax1.plot(range(1, n_epochs + 1), train_losses, label='Train Loss')
+ax1.plot(train_losses, label='Train Loss')
 ax1.set_title('Training Loss')
 ax1.set_xlabel('Epoch')
 ax1.set_ylabel('Loss')
 ax1.legend()
 
-ax2.plot(range(1, n_epochs + 1), test_losses, label='Test Loss')
+ax2.plot(test_losses, label='Test Loss')
 ax2.set_title('Test Loss')
 ax2.set_xlabel('Epoch')
 ax2.set_ylabel('Loss')
@@ -128,14 +137,14 @@ plt.show()
 # Plot accuracy over epochs
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-ax1.plot(range(1, n_epochs + 1), train_accuracies, label='Train Accuracy')
+ax1.plot(train_accuracies, label='Train Accuracy')
 ax1.set_ylim([0, 100])
 ax1.set_title('Training Accuracy')
 ax1.set_xlabel('Epoch')
 ax1.set_ylabel('Accuracy (%)')
 ax1.legend()
 
-ax2.plot(range(1, n_epochs + 1), test_accuracies, label='Test Accuracy')
+ax2.plot(test_accuracies, label='Test Accuracy')
 ax2.set_ylim([0, 100])
 ax2.set_title('Test Accuracy')
 ax2.set_xlabel('Epoch')
