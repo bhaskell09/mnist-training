@@ -5,16 +5,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib
+from tqdm import tqdm
+from net import Net
 
 # Verify matplotlib backend is TkAgg
 backend = matplotlib.get_backend()
 assert backend == "tkagg", f"Backend is {backend}, not TkAgg :("
 
 # Training parameters
-n_epochs = 500
+n_epochs = 25
 batch_size_train = 256
 batch_size_test = 1000
-learning_rate = 0.01
+learning_rate = 0.001
 momentum = 0.5
 log_interval = 10
 
@@ -37,34 +39,16 @@ test_loader = torch.utils.data.DataLoader(
         ])),
     batch_size=batch_size_test, shuffle=False)
 
-# Define Neural Network
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        neurons = 50
-        self.fc1 = nn.Linear(28*28, neurons)
-        self.fc2 = nn.Linear(neurons, neurons)
-        self.fc3 = nn.Linear(neurons, 10)
-        self.sigmoid = nn.Sigmoid()
-        self.softmax = nn.Softmax(dim=1)
-
-    def forward(self, x: torch.Tensor):
-        x = x.view(-1, 28*28)  # Flatten the input
-        x = self.sigmoid(self.fc1(x))
-        x = self.sigmoid(self.fc2(x))
-        x = self.fc3(x)
-        x = self.softmax(x)
-        return x
 
 network = Net().to(device)
-optimizer = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
+optimizer = optim.Adam(network.parameters(), lr=learning_rate)
 
 # Training function
 def train(epoch):
     network.train()
     total_loss = 0
     correct = 0
-    for batch_idx, (data, target) in enumerate(train_loader):
+    for batch_idx, (data, target) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch}")):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = network(data)
@@ -75,12 +59,13 @@ def train(epoch):
         pred = output.argmax(dim=1, keepdim=True)
         correct += pred.eq(target.view_as(pred)).sum().item()
 
-        if batch_idx % log_interval == 0:
-            print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} '
-                  f'({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
-
     train_accuracy = 100. * correct / len(train_loader.dataset)
-    return total_loss / len(train_loader.dataset), train_accuracy
+    
+    average_train_loss = total_loss / len(train_loader.dataset)
+    
+    print(f'Train set: Average loss: {average_train_loss:.4f}, Accuracy: {correct}/{len(train_loader.dataset)} '
+          f'({train_accuracy:.2f}%)')
+    return average_train_loss, train_accuracy
 
 # Testing function
 def test():
@@ -98,8 +83,8 @@ def test():
     test_loss /= len(test_loader.dataset)
     test_accuracy = 100. * correct / len(test_loader.dataset)
     
-    print(f'\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} '
-          f'({test_accuracy:.2f}%)\n')
+    print(f'Test set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} '
+          f'({test_accuracy:.2f}%)')
     
     return test_loss, test_accuracy
 
@@ -119,6 +104,8 @@ for epoch in range(1, n_epochs + 1):
     test_accuracies.append(test_acc)
 
 print("Training complete")
+
+torch.save(network.state_dict(), "mnist_model.pth")
 
 # Plot loss over epochs
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
