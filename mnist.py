@@ -1,11 +1,14 @@
-import torch
-import torchvision
+import matplotlib
 import matplotlib.pyplot as plt
-import torch.nn as nn
+import numpy as np
+import seaborn as sn
+import torch
 import torch.nn.functional as F
 import torch.optim as optim
-import matplotlib
+import torchvision
+from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
+
 from net import Net
 
 # Verify matplotlib backend is TkAgg
@@ -13,7 +16,7 @@ backend = matplotlib.get_backend()
 assert backend == "tkagg", f"Backend is {backend}, not TkAgg :("
 
 # Training parameters
-n_epochs = 100
+n_epochs = 500
 batch_size_train = 512
 batch_size_test = 1000
 learning_rate = 0.001
@@ -24,19 +27,21 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load MNIST dataset
 train_loader = torch.utils.data.DataLoader(
-    torchvision.datasets.MNIST('./data/', train=True, download=True, 
-        transform=torchvision.transforms.Compose([
-            torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize((0.1307,), (0.3081,))
-        ])),
+    torchvision.datasets.MNIST('./data/', train=True, download=True,
+                               transform=torchvision.transforms.Compose([
+                                   torchvision.transforms.ToTensor(),
+                                   torchvision.transforms.Normalize(
+                                       (0.1307,), (0.3081,))
+                               ])),
     batch_size=batch_size_train, shuffle=True, num_workers=15)
 
 test_loader = torch.utils.data.DataLoader(
     torchvision.datasets.MNIST('./data/', train=False, download=True,
-        transform=torchvision.transforms.Compose([
-            torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize((0.1307,), (0.3081,))
-        ])),
+                               transform=torchvision.transforms.Compose([
+                                   torchvision.transforms.ToTensor(),
+                                   torchvision.transforms.Normalize(
+                                       (0.1307,), (0.3081,))
+                               ])),
     batch_size=batch_size_test, shuffle=True)
 
 
@@ -44,6 +49,8 @@ network = Net().to(device)
 optimizer = optim.Adam(network.parameters(), lr=learning_rate)
 
 # Training function
+
+
 def train(epoch):
     network.train()
     total_loss = 0
@@ -60,14 +67,16 @@ def train(epoch):
         correct += pred.eq(target.view_as(pred)).sum().item()
 
     train_accuracy = 100. * correct / len(train_loader.dataset)
-    
+
     average_train_loss = total_loss / len(train_loader.dataset)
-    
+
     print(f'Train set: Average loss: {average_train_loss:.4f}, Accuracy: {correct}/{len(train_loader.dataset)} '
           f'({train_accuracy:.2f}%)')
     return average_train_loss, train_accuracy
 
 # Testing function
+
+
 def test():
     network.eval()
     test_loss = 0
@@ -79,14 +88,15 @@ def test():
             test_loss += F.nll_loss(output, target, reduction='sum').item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
-    
+
     test_loss /= len(test_loader.dataset)
     test_accuracy = 100. * correct / len(test_loader.dataset)
-    
+
     print(f'Test set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} '
           f'({test_accuracy:.2f}%)')
-    
+
     return test_loss, test_accuracy
+
 
 # Training loop
 train_losses = []
@@ -98,7 +108,7 @@ no_improvement_counter = 0
 for epoch in range(1, n_epochs + 1):
     train_loss, train_acc = train(epoch)
     test_loss, test_acc = test()
-    
+
     train_losses.append(train_loss)
     test_losses.append(test_loss)
     train_accuracies.append(train_acc)
@@ -108,9 +118,10 @@ for epoch in range(1, n_epochs + 1):
         best_test_loss = test_loss
         no_improvement_counter = 0
         torch.save(network.state_dict(), "mnist_model_ReLU.pth")
-    else: 
+    else:
         no_improvement_counter += 1
-        print(f"No improvement in test loss for {no_improvement_counter} epochs.")
+        print(
+            f"No improvement in test loss for {no_improvement_counter} epochs.")
         if no_improvement_counter >= 10:
             print("Stopping early due to no improvement in test loss.")
             break
@@ -160,7 +171,8 @@ _, (example_data, example_targets) = next(examples)
 
 network.eval()
 with torch.no_grad():
-    example_data, example_targets = example_data.to(device), example_targets.to(device)
+    example_data, example_targets = example_data.to(
+        device), example_targets.to(device)
     predictions = network(example_data[:10])
     predicted_labels = predictions.argmax(dim=1)
 
@@ -169,7 +181,34 @@ for i in range(10):
     plt.subplot(2, 5, i+1)
     plt.tight_layout()
     plt.imshow(example_data[i][0].cpu(), cmap='gray', interpolation='none')
-    plt.title(f"Pred: {predicted_labels[i].item()} Actual: {example_targets[i].item()}")
+    plt.title(
+        f"Pred: {predicted_labels[i].item()} Actual: {example_targets[i].item()}")
     plt.xticks([])
     plt.yticks([])
+plt.show()
+
+y_pred = []
+y_true = []
+
+with torch.no_grad():
+    for data, target in test_loader:
+        data, target = data.to(device), target.to(device)
+        output = network(data)
+        pred = output.argmax(dim=1, keepdim=True)
+        y_pred.extend(pred.view(-1).cpu().numpy())
+        y_true.extend(target.cpu().numpy())
+
+# Compute confusion matrix
+cm = confusion_matrix(y_true, y_pred)
+
+# Convert confusion matrix to percentages
+cm_percentage = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100
+
+# Plot confusion matrix
+plt.figure(figsize=(8, 6))
+sn.heatmap(cm_percentage, annot=True, fmt='.2f', cmap='Blues',
+           xticklabels=range(len(cm)), yticklabels=range(len(cm)))
+plt.xlabel('Predicted Labels')
+plt.ylabel('True Labels')
+plt.title('Confusion Matrix (Percentages)')
 plt.show()
