@@ -36,3 +36,13 @@ def predict_image():
         print("No file selected")
 
 predict_image()
+
+while True:
+    again = input("Do you want to analyze another image? (y/n): ").strip().lower()
+    if again == 'y':
+        predict_image()
+    elif again == 'n':
+        print("Exiting...")
+        break
+    else:
+        print("Invalid input. Please enter 'y' or 'n'.")
