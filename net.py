@@ -15,7 +15,7 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(28*28, neurons)
         self.fc2 = nn.Linear(neurons, neurons)
         self.fc3 = nn.Linear(neurons, 10)
-        self.activation = nn.Tanh()
+        self.activation = nn.LeakyReLU()
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x: torch.Tensor):

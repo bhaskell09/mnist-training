@@ -1,3 +1,4 @@
 sigmoid accuracy: 96.23%
 relu accruacy: 97.28%
 tanh accuracy: 98.04%
+leaky relu accruacy: 98.13%
