@@ -1,6 +1,7 @@
 import torch
 import torchvision
 from tqdm import tqdm
+
 from net import Net
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

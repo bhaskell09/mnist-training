@@ -1,16 +1,17 @@
-import torch
-import torchvision
+import matplotlib
 import matplotlib.pyplot as plt
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import matplotlib
+import torchvision
 from tqdm import tqdm
+
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        neurons = 50
+        neurons = 250
         self.fc1 = nn.Linear(28*28, neurons)
         self.fc2 = nn.Linear(neurons, neurons)
         self.fc3 = nn.Linear(neurons, 10)
