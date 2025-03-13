@@ -3,3 +3,4 @@ relu accruacy: 97.28%
 tanh accuracy: 98.04%
 leaky relu accruacy: 98.13%
 swish accruacy: 98.07%
+multi accuracy: 97.85%
