@@ -117,7 +117,7 @@ for epoch in range(1, n_epochs + 1):
     if test_loss < best_test_loss:
         best_test_loss = test_loss
         no_improvement_counter = 0
-        torch.save(network.state_dict(), "mnist_model_Leaky_ReLU.pth")
+        torch.save(network.state_dict(), "mnist_model_Swish.pth")
     else:
         no_improvement_counter += 1
         print(
