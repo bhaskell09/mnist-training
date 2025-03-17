@@ -14,6 +14,11 @@ network = Net().to(device)
 network.load_state_dict(torch.load('mnist_model_Leaky_ReLU.pth', weights_only=True))
 network.eval()
 
+transform = torchvision.transforms.Compose([
+    torchvision.transforms.ToTensor(),
+    torchvision.transforms.Normalize((0.1307,), (0.3081,))
+])
+
 def preprocess_image(image_path):
     image = Image.open(image_path).convert('L')
     image = image.resize((28, 28))
@@ -30,8 +35,8 @@ def predict_image():
         image_tensor = preprocess_image(image_path)
         with torch.no_grad():
             output = network(image_tensor)
-            predicted_label = torch.argmax(output, dim=1).item()
-        print(f'Predicted label: {predicted_label}')
+            prediction = torch.argmax(output, dim=1).item()
+        print(f'Predicton: {prediction}')
     else:
         print("No file selected")
 
