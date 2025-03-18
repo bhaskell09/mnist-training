@@ -36,7 +36,8 @@ def predict_image():
         with torch.no_grad():
             output = network(image_tensor)
             prediction = torch.argmax(output, dim=1).item()
-        print(f'Predicton: {prediction}')
+        cofidence = 100 * output[0, prediction].to("cpu").item()
+        print(f'Predicton: {prediction}, Confidence: {cofidence:.3f}%')
     else:
         print("No file selected")
 

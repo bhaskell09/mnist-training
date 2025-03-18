@@ -122,7 +122,7 @@ for epoch in range(1, n_epochs + 1):
         no_improvement_counter += 1
         print(
             f"No improvement in test loss for {no_improvement_counter} epochs.")
-        if no_improvement_counter >= 10:
+        if no_improvement_counter >= 5:
             print("Stopping early due to no improvement in test loss.")
             break
 print("Training complete")
