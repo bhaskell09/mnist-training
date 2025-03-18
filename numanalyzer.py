@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import torchvision
 from PIL import Image
-from tqdm import tqdm
 
 from net import Net
 
@@ -36,8 +35,8 @@ def predict_image():
         with torch.no_grad():
             output = network(image_tensor)
             prediction = torch.argmax(output, dim=1).item()
-        cofidence = 100 * output[0, prediction].to("cpu").item()
-        print(f'Predicton: {prediction}, Confidence: {cofidence:.3f}%')
+        confidence = 100 * output[0, prediction].to("cpu").item()
+        print(f'Predicton: {prediction}, Confidence: {confidence:.3f}%')
     else:
         print("No file selected")
 

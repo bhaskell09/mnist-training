@@ -19,7 +19,7 @@ assert backend == "tkagg", f"Backend is {backend}, not TkAgg :("
 n_epochs = 500
 batch_size_train = 512
 batch_size_test = 1000
-learning_rate = 0.001
+learning_rate = 0.0001
 momentum = 0.5
 log_interval = 10
 
@@ -30,7 +30,7 @@ else:
     print(fg.yellow + "WARNING: Using CPU for training" + fg.rs)
     response = input(fg.yellow + "Do you want to continue training on CPU? (y/n): " + fg.rs).strip().lower()
     if response != 'y':
-        print("Exiting training.")
+        print("Exiting...")
         exit()
 
 # Load MNIST dataset
@@ -130,7 +130,7 @@ for epoch in range(1, n_epochs + 1):
         no_improvement_counter += 1
         print(
             f"No improvement in test loss for {no_improvement_counter} epochs.")
-        if no_improvement_counter >= 5:
+        if no_improvement_counter >= 10:
             print("Stopping early due to no improvement in test loss.")
             break
 print("Training complete")
@@ -180,17 +180,16 @@ _, (example_data, example_targets) = next(examples)
 network.eval()
 with torch.no_grad():
     example_data, example_targets = example_data.to(device), example_targets.to(device)
-    predictions = network(example_data[:10])
-    predicted_labels = predictions.argmax(dim=1)
-    confidence_scores = F.softmax(predictions, dim=1).max(dim=1).values
-
+    output = network(example_data[:10])
+    predicted_labels = output.argmax(dim=1)
+    
 fig = plt.figure()
 for i in range(10):
     plt.subplot(2, 5, i+1)
     plt.tight_layout()
     plt.imshow(example_data[i][0].cpu(), cmap='gray', interpolation='none')
     plt.title(
-        f"Pred: {predicted_labels[i].item()} ({confidence_scores[i].item()*100:.2f}%)\nActual: {example_targets[i].item()}")
+        f"Pred: {predicted_labels[i].item()} Actual: {example_targets[i].item()}")
     plt.xticks([])
     plt.yticks([])
 plt.show()
