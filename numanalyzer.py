@@ -7,6 +7,8 @@ import torchvision
 from PIL import Image
 
 from net import Net
+import sys
+import select
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 network = Net().to(device)
@@ -42,12 +44,20 @@ def predict_image():
 
 predict_image()
 
+def input_with_timeout(prompt, timeout):
+    print(prompt, end=': ', flush=True)
+    ready, _, _ = select.select([sys.stdin], [], [], timeout)
+    if ready:
+        return sys.stdin.readline().strip().lower()
+    else:
+        return 'n'
+
 while True:
-    again = input("Do you want to analyze another image? (y/n): ").strip().lower()
+    again = input_with_timeout("Do you want to analyze another image? (y/n)", 10)
     if again == 'y':
         predict_image()
     elif again == 'n':
-        print("Exiting...")
+        print("\nExiting...")
         break
     else:
         print("Invalid input. Please enter 'y' or 'n'.")

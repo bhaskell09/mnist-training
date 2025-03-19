@@ -11,9 +11,9 @@ from tqdm import tqdm
 class Net(nn.Module):
     def __init__(self, in_channels=1):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=128, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(in_channels=128, out_channels=16, kernel_size=3, stride=1, padding=1)
         self.fc1 = nn.Linear(16*7*7, 10)
         self.softmax = nn.Softmax(dim=1)
     def forward(self, x: torch.Tensor):

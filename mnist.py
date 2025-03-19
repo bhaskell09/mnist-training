@@ -28,7 +28,7 @@ if device.type == "cuda":
     print("Using GPU for training")
 else:
     print(fg.yellow + "WARNING: Using CPU for training" + fg.rs)
-    response = input(fg.yellow + "Do you want to continue training on CPU? (y/n): " + fg.rs).strip().lower()
+    response = input(fg.yellow + "Do you want to continue training on CPU? (May result in slower training) (y/n): " + fg.rs).strip().lower()
     if response != 'y':
         print("Exiting...")
         exit()
