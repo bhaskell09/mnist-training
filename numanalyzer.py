@@ -1,3 +1,5 @@
+import select
+import sys
 import tkinter as tk
 from tkinter import filedialog
 
@@ -5,10 +7,9 @@ import numpy as np
 import torch
 import torchvision
 from PIL import Image
+from sty import fg
 
 from net import Net
-import sys
-import select
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 network = Net().to(device)
@@ -38,7 +39,15 @@ def predict_image():
             output = network(image_tensor)
             prediction = torch.argmax(output, dim=1).item()
         confidence = 100 * output[0, prediction].to("cpu").item()
-        print(f'Predicton: {prediction}, Confidence: {confidence:.3f}%')
+        if confidence >= 90:
+            print(f'Prediction: {prediction}')
+            print(fg.green + f'Confidence: {confidence:.3f}%' + fg.rs)
+        elif confidence < 90 and confidence > 50: 
+            print(f'Prediction: {prediction}' + fg.rs)
+            print(fg.yellow  + f'Confidence: {confidence:.3f}%' + fg.rs)
+        elif confidence < 50:
+            print(f'Prediction: {prediction}')
+            print(fg.red + f'Confidence: {confidence:.3f}%' + fg.rs)
     else:
         print("No file selected")
 
