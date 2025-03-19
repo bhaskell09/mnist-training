@@ -49,7 +49,8 @@ def predict_image():
             print(f'Prediction: {prediction}')
             print(fg.red + f'Confidence: {confidence:.3f}%' + fg.rs)
     else:
-        print("No file selected")
+        print("No file selected.\nExiting...")
+        exit()
 
 predict_image()
 

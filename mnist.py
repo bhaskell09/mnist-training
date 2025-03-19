@@ -16,7 +16,7 @@ backend = matplotlib.get_backend()
 assert backend == "tkagg", f"Backend is {backend}, not TkAgg :("
 
 # Training parameters
-n_epochs = 500
+n_epochs = 5
 batch_size_train = 512
 batch_size_test = 1000
 learning_rate = 0.0001
@@ -177,19 +177,27 @@ plt.show()
 examples = enumerate(test_loader)
 _, (example_data, example_targets) = next(examples)
 
+examples = enumerate(test_loader)
+_, (example_data, example_targets) = next(examples)
+
 network.eval()
 with torch.no_grad():
     example_data, example_targets = example_data.to(device), example_targets.to(device)
     output = network(example_data[:10])
+    # Get predicted class
     predicted_labels = output.argmax(dim=1)
+    # Get confidence scores directly from the network output
+    # Since the network already applies softmax in its forward method
+    confidence_scores = output[range(len(predicted_labels)), predicted_labels]
     
-fig = plt.figure()
+fig = plt.figure(figsize=(12, 6))
 for i in range(10):
     plt.subplot(2, 5, i+1)
     plt.tight_layout()
     plt.imshow(example_data[i][0].cpu(), cmap='gray', interpolation='none')
+    # Display prediction, actual label, and confidence percentage
     plt.title(
-        f"Pred: {predicted_labels[i].item()} Actual: {example_targets[i].item()}")
+        f"Pred: {predicted_labels[i].item()}\nActual: {example_targets[i].item()}\nConf: {confidence_scores[i].item()*100:.1f}%")
     plt.xticks([])
     plt.yticks([])
 plt.show()
@@ -219,3 +227,12 @@ plt.xlabel('Predicted Labels')
 plt.ylabel('True Labels')
 plt.title('Confusion Matrix (Percentages)')
 plt.show()
+
+# Append the accuracy information to accuracy.txt
+with open('accuracy.txt', 'a') as f:
+    # Get model name from the saved path
+    model_name = "mnist_model_Conv.pth"
+    # Extract activation function from network architecture
+    activation_func = "relu"  # This is hardcoded based on your Net class using F.relu
+    # Write the accuracy to the file
+    f.write(f"{activation_func} accuracy: {test_accuracies[-1]:.2f}%\n")
