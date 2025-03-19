@@ -1,8 +1,3 @@
-sigmoid accuracy: 96.23%
-relu accruacy: 97.28%
-tanh accuracy: 98.04%
-leaky relu accruacy: 98.13%
-relu accuracy: 82.17%
 2025-03-19 14:17:06, mnist_model_Conv.pth, ReLU, 80.53%, 44
 2025-03-19 14:26:01, mnist_model_Conv.pth, ReLU, 89.14%, 91
 2025-03-19 14:30:17, mnist_model_Conv.pth, ReLU, 77.63%, 2 epochs
