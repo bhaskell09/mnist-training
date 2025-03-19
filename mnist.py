@@ -10,18 +10,24 @@ from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 from net import Net
 from sty import fg
+import os
+import datetime
 
 # Verify matplotlib backend is TkAgg
 backend = matplotlib.get_backend()
 assert backend == "tkagg", f"Backend is {backend}, not TkAgg :("
 
 # Training parameters
-n_epochs = 5
+n_epochs = 500
 batch_size_train = 512
 batch_size_test = 1000
-learning_rate = 0.0001
+learning_rate = 0.001  # Slightly higher initial learning rate
 momentum = 0.5
 log_interval = 10
+
+# Model identifier
+model_name = "mnist_model_Conv.pth"
+activation_function = "ReLU"  # The activation function used in the network
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if device.type == "cuda":
@@ -56,9 +62,37 @@ test_loader = torch.utils.data.DataLoader(
 network = Net().to(device)
 optimizer = optim.Adam(network.parameters(), lr=learning_rate)
 
+# Add learning rate scheduler
+# ReduceLROnPlateau reduces learning rate when a metric stops improving
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, 
+    mode='min',           # Monitor loss (minimize)
+    factor=0.5,           # Multiply learning rate by this factor when reducing
+    patience=5,           # Number of epochs with no improvement after which LR will be reduced
+    verbose=True,         # Print message when LR is reduced
+    min_lr=1e-6           # Lower bound on the learning rate
+)
+
+# Function to get current learning rate
+def get_lr():
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
+
+# Function to save accuracy information to a file
+def save_accuracy_info(filename, activation, accuracy, epoch_count):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Create the file if it doesn't exist, otherwise append to it
+    mode = 'a' if os.path.exists('accuracy.txt') else 'w'
+    
+    with open('accuracy.txt', mode) as f:
+        if mode == 'w':
+            f.write("Timestamp, Model Filename, Activation Function, Test Accuracy, Epochs Trained\n")
+        f.write(f"{timestamp}, {filename}, {activation}, {accuracy:.2f}%, {epoch_count}\n")
+    
+    print(f"Accuracy information saved to accuracy.txt")
+
 # Training function
-
-
 def train(epoch):
     network.train()
     total_loss = 0
@@ -83,8 +117,6 @@ def train(epoch):
     return average_train_loss, train_accuracy
 
 # Testing function
-
-
 def test():
     network.eval()
     test_loss = 0
@@ -111,21 +143,40 @@ train_losses = []
 test_losses = []
 train_accuracies = []
 test_accuracies = []
+learning_rates = []  # Track learning rates
 best_test_loss = float('inf')
+best_test_accuracy = 0.0
 no_improvement_counter = 0
+
+# Print initial learning rate
+current_lr = get_lr()
+print(f"Initial learning rate: {current_lr:.6f}")
+
 for epoch in range(1, n_epochs + 1):
     train_loss, train_acc = train(epoch)
     test_loss, test_acc = test()
+    
+    # Get and print current learning rate after train/test
+    current_lr = get_lr()
+    print(f"Current learning rate: {current_lr:.6f}")
+    learning_rates.append(current_lr)
+    
+    # Step the scheduler based on validation loss
+    scheduler.step(test_loss)
 
     train_losses.append(train_loss)
     test_losses.append(test_loss)
     train_accuracies.append(train_acc)
     test_accuracies.append(test_acc)
 
+    # Track best accuracy
+    if test_acc > best_test_accuracy:
+        best_test_accuracy = test_acc
+
     if test_loss < best_test_loss:
         best_test_loss = test_loss
         no_improvement_counter = 0
-        torch.save(network.state_dict(), "mnist_model_Conv.pth")
+        torch.save(network.state_dict(), model_name)
     else:
         no_improvement_counter += 1
         print(
@@ -133,6 +184,10 @@ for epoch in range(1, n_epochs + 1):
         if no_improvement_counter >= 10:
             print("Stopping early due to no improvement in test loss.")
             break
+
+# Save accuracy information at the end of training
+save_accuracy_info(model_name, activation_function, best_test_accuracy, epoch)
+
 print("Training complete")
 
 # Plot loss over epochs
@@ -173,10 +228,17 @@ ax2.legend()
 plt.tight_layout()
 plt.show()
 
-# Get a batch of test data and visualize predictions
-examples = enumerate(test_loader)
-_, (example_data, example_targets) = next(examples)
+# Plot learning rate over epochs
+plt.figure(figsize=(10, 5))
+plt.plot(learning_rates)
+plt.title('Learning Rate Schedule')
+plt.xlabel('Epoch')
+plt.ylabel('Learning Rate')
+plt.yscale('log')  # Log scale often better for visualizing learning rates
+plt.grid(True)
+plt.show()
 
+# Get a batch of test data and visualize predictions
 examples = enumerate(test_loader)
 _, (example_data, example_targets) = next(examples)
 
@@ -184,20 +246,15 @@ network.eval()
 with torch.no_grad():
     example_data, example_targets = example_data.to(device), example_targets.to(device)
     output = network(example_data[:10])
-    # Get predicted class
     predicted_labels = output.argmax(dim=1)
-    # Get confidence scores directly from the network output
-    # Since the network already applies softmax in its forward method
-    confidence_scores = output[range(len(predicted_labels)), predicted_labels]
     
-fig = plt.figure(figsize=(12, 6))
+fig = plt.figure()
 for i in range(10):
     plt.subplot(2, 5, i+1)
     plt.tight_layout()
     plt.imshow(example_data[i][0].cpu(), cmap='gray', interpolation='none')
-    # Display prediction, actual label, and confidence percentage
     plt.title(
-        f"Pred: {predicted_labels[i].item()}\nActual: {example_targets[i].item()}\nConf: {confidence_scores[i].item()*100:.1f}%")
+        f"Pred: {predicted_labels[i].item()} Actual: {example_targets[i].item()}")
     plt.xticks([])
     plt.yticks([])
 plt.show()
@@ -227,12 +284,3 @@ plt.xlabel('Predicted Labels')
 plt.ylabel('True Labels')
 plt.title('Confusion Matrix (Percentages)')
 plt.show()
-
-# Append the accuracy information to accuracy.txt
-with open('accuracy.txt', 'a') as f:
-    # Get model name from the saved path
-    model_name = "mnist_model_Conv.pth"
-    # Extract activation function from network architecture
-    activation_func = "relu"  # This is hardcoded based on your Net class using F.relu
-    # Write the accuracy to the file
-    f.write(f"{activation_func} accuracy: {test_accuracies[-1]:.2f}%\n")
