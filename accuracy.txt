@@ -3,3 +3,14 @@ relu accruacy: 97.28%
 tanh accuracy: 98.04%
 leaky relu accruacy: 98.13%
 relu accuracy: 82.17%
+2025-03-19 14:17:06, mnist_model_Conv.pth, ReLU, 80.53%, 44
+2025-03-19 14:26:01, mnist_model_Conv.pth, ReLU, 89.14%, 91
+2025-03-19 14:30:17, mnist_model_Conv.pth, ReLU, 77.63%, 2 epochs
+2025-03-19 14:48:59, mnist_model_Conv.pth, ReLU, 88.63%, 5 epochs
+2025-03-19 14:55:16, mnist_model_Conv.pth, ReLU, 79.38%, 5 epochs
+2025-03-19 14:58:01, mnist_model_Conv.pth, ReLU, 88.19%, 5 epochs
+2025-03-19 14:59:54, mnist_model_Conv.pth, ReLU, 88.39%, 5 epochs
+2025-03-19 15:03:48, mnist_model_Conv.pth, ReLU, 97.05%, 5 epochs
+2025-03-19 15:12:05, mnist_model_Conv_2.pth, ReLU, 79.34%, 5 epochs
+2025-03-19 15:14:12, mnist_model_Conv_2.pth, ReLU, 88.26%, 5 epochs
+2025-03-19 15:28:19, mnist_model_Conv_2.pth, ReLU, 98.74%, 55 epochs

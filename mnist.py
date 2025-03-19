@@ -21,13 +21,13 @@ assert backend == "tkagg", f"Backend is {backend}, not TkAgg :("
 n_epochs = 500
 batch_size_train = 512
 batch_size_test = 1000
-learning_rate = 0.001  # Slightly higher initial learning rate
+learning_rate = 0.001  
 momentum = 0.5
 log_interval = 10
 
 # Model identifier
-model_name = "mnist_model_Conv.pth"
-activation_function = "ReLU"  # The activation function used in the network
+model_name = "mnist_model_Conv_2.pth"
+activation_function = "ReLU"  
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if device.type == "cuda":
@@ -44,8 +44,7 @@ train_loader = torch.utils.data.DataLoader(
     torchvision.datasets.MNIST('./data/', train=True, download=True,
         transform=torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize(
-                (0,), (1,))
+            torchvision.transforms.Normalize((0,), (1,))
         ])),
     batch_size=batch_size_train, shuffle=True, num_workers=15)
 
@@ -53,24 +52,20 @@ test_loader = torch.utils.data.DataLoader(
     torchvision.datasets.MNIST('./data/', train=False, download=True,
         transform=torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize(
-                (0,), (1,))
+            torchvision.transforms.Normalize((0,), (1,))
         ])),
     batch_size=batch_size_test, shuffle=True)
-
 
 network = Net().to(device)
 optimizer = optim.Adam(network.parameters(), lr=learning_rate)
 
-# Add learning rate scheduler
-# ReduceLROnPlateau reduces learning rate when a metric stops improving
+# Learning rate scheduler
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, 
-    mode='min',           # Monitor loss (minimize)
-    factor=0.5,           # Multiply learning rate by this factor when reducing
-    patience=5,           # Number of epochs with no improvement after which LR will be reduced
-    verbose=True,         # Print message when LR is reduced
-    min_lr=1e-6           # Lower bound on the learning rate
+    mode='min',
+    factor=0.5,
+    patience=2,
+    min_lr=1e-15  # Removed verbose=True
 )
 
 # Function to get current learning rate
@@ -82,13 +77,12 @@ def get_lr():
 def save_accuracy_info(filename, activation, accuracy, epoch_count):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Create the file if it doesn't exist, otherwise append to it
     mode = 'a' if os.path.exists('accuracy.txt') else 'w'
     
     with open('accuracy.txt', mode) as f:
         if mode == 'w':
             f.write("Timestamp, Model Filename, Activation Function, Test Accuracy, Epochs Trained\n")
-        f.write(f"{timestamp}, {filename}, {activation}, {accuracy:.2f}%, {epoch_count}\n")
+        f.write(f"{timestamp}, {filename}, {activation}, {accuracy:.2f}%, {epoch_count} epochs\n")
     
     print(f"Accuracy information saved to accuracy.txt")
 
@@ -109,7 +103,6 @@ def train(epoch):
         correct += pred.eq(target.view_as(pred)).sum().item()
 
     train_accuracy = 100. * correct / len(train_loader.dataset)
-
     average_train_loss = total_loss / len(train_loader.dataset)
 
     print(f'Train set: Average loss: {average_train_loss:.4f}, Accuracy: {correct}/{len(train_loader.dataset)} '
@@ -143,33 +136,31 @@ train_losses = []
 test_losses = []
 train_accuracies = []
 test_accuracies = []
-learning_rates = []  # Track learning rates
+learning_rates = []  
 best_test_loss = float('inf')
 best_test_accuracy = 0.0
 no_improvement_counter = 0
 
-# Print initial learning rate
-current_lr = get_lr()
-print(f"Initial learning rate: {current_lr:.6f}")
+print(f"Initial learning rate: {get_lr():.6f}")
 
 for epoch in range(1, n_epochs + 1):
     train_loss, train_acc = train(epoch)
     test_loss, test_acc = test()
     
-    # Get and print current learning rate after train/test
-    current_lr = get_lr()
-    print(f"Current learning rate: {current_lr:.6f}")
-    learning_rates.append(current_lr)
-    
-    # Step the scheduler based on validation loss
+    prev_lr = get_lr()
     scheduler.step(test_loss)
+    new_lr = get_lr()
+    
+    if new_lr != prev_lr:
+        print(fg.yellow + f"Learning rate reduced to: {new_lr:.6f}" + fg.rs)
+
+    learning_rates.append(new_lr)
 
     train_losses.append(train_loss)
     test_losses.append(test_loss)
     train_accuracies.append(train_acc)
     test_accuracies.append(test_acc)
 
-    # Track best accuracy
     if test_acc > best_test_accuracy:
         best_test_accuracy = test_acc
 
@@ -179,15 +170,12 @@ for epoch in range(1, n_epochs + 1):
         torch.save(network.state_dict(), model_name)
     else:
         no_improvement_counter += 1
-        print(
-            f"No improvement in test loss for {no_improvement_counter} epochs.")
-        if no_improvement_counter >= 10:
+        print(fg.yellow + f"No improvement in test loss for {no_improvement_counter} epochs." + fg.rs)
+        if no_improvement_counter >= 15:
             print("Stopping early due to no improvement in test loss.")
             break
 
-# Save accuracy information at the end of training
 save_accuracy_info(model_name, activation_function, best_test_accuracy, epoch)
-
 print("Training complete")
 
 # Plot loss over epochs
@@ -228,13 +216,13 @@ ax2.legend()
 plt.tight_layout()
 plt.show()
 
-# Plot learning rate over epochs
+# Plot learning curves
 plt.figure(figsize=(10, 5))
 plt.plot(learning_rates)
 plt.title('Learning Rate Schedule')
 plt.xlabel('Epoch')
 plt.ylabel('Learning Rate')
-plt.yscale('log')  # Log scale often better for visualizing learning rates
+plt.yscale('log')
 plt.grid(True)
 plt.show()
 
@@ -246,15 +234,31 @@ network.eval()
 with torch.no_grad():
     example_data, example_targets = example_data.to(device), example_targets.to(device)
     output = network(example_data[:10])
-    predicted_labels = output.argmax(dim=1)
+
+    # Debugging raw logits
+    print("Raw Logits:\n", output.cpu().numpy())
+
+    # IMPORTANT: Directly use the raw outputs
+    # Extract max confidence values without softmax
+    predicted_labels = torch.argmax(output, dim=1)
     
-fig = plt.figure()
+    # Calculate confidence percentage directly from raw values
+    output_np = output.cpu().numpy()
+    confidence_percentages = np.array([output_np[i, predicted_labels[i]] for i in range(len(predicted_labels))]) * 100
+    
+    predicted_labels = predicted_labels.cpu().numpy()
+    example_targets = example_targets[:10].cpu().numpy()
+
+# Plot predictions
+fig = plt.figure(figsize=(10, 5))
 for i in range(10):
-    plt.subplot(2, 5, i+1)
+    plt.subplot(2, 5, i + 1)
     plt.tight_layout()
     plt.imshow(example_data[i][0].cpu(), cmap='gray', interpolation='none')
     plt.title(
-        f"Pred: {predicted_labels[i].item()} Actual: {example_targets[i].item()}")
+        f"Pred: {predicted_labels[i]} ({confidence_percentages[i]:.1f}%)\n"
+        f"Actual: {example_targets[i]}"
+    )
     plt.xticks([])
     plt.yticks([])
 plt.show()
@@ -270,13 +274,9 @@ with torch.no_grad():
         y_pred.extend(pred.view(-1).cpu().numpy())
         y_true.extend(target.cpu().numpy())
 
-# Compute confusion matrix
 cm = confusion_matrix(y_true, y_pred)
-
-# Convert confusion matrix to percentages
 cm_percentage = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100
 
-# Plot confusion matrix
 plt.figure(figsize=(8, 6))
 sn.heatmap(cm_percentage, annot=True, fmt='.2f', cmap='Blues',
            xticklabels=range(len(cm)), yticklabels=range(len(cm)))

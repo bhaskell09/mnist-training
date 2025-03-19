@@ -13,7 +13,7 @@ from net import Net
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 network = Net().to(device)
-network.load_state_dict(torch.load('mnist_model_Conv.pth', weights_only=True))
+network.load_state_dict(torch.load('mnist_model_Conv_2.pth', weights_only=True))
 network.eval()
 
 transform = torchvision.transforms.Compose([
