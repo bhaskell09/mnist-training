@@ -15,10 +15,11 @@ import datetime
 
 # Verify matplotlib backend is TkAgg
 backend = matplotlib.get_backend()
-assert backend == "tkagg", f"Backend is {backend}, not TkAgg :("
+assert backend == "qtagg", f"Backend is {backend}, not QtAgg :("
+print(f"Using backend: {backend}")
 
 # Training parameters
-n_epochs = 500
+n_epochs = 5
 batch_size_train = 512
 batch_size_test = 1000
 learning_rate = 0.001  
