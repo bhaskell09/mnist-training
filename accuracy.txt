@@ -9,3 +9,5 @@
 2025-03-19 15:12:05, mnist_model_Conv_2.pth, ReLU, 79.34%, 5 epochs
 2025-03-19 15:14:12, mnist_model_Conv_2.pth, ReLU, 88.26%, 5 epochs
 2025-03-19 15:28:19, mnist_model_Conv_2.pth, ReLU, 98.74%, 55 epochs
+2025-03-21 14:58:13, mnist_model_Conv_2.pth, ReLU, 89.97%, 59 epochs
+2025-03-21 15:16:50, mnist_model_Conv_2.pth, ReLU, 80.47%, 35 epochs

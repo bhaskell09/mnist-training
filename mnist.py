@@ -19,7 +19,7 @@ assert backend == "qtagg", f"Backend is {backend}, not QtAgg :("
 print(f"Using backend: {backend}")
 
 # Training parameters
-n_epochs = 5
+n_epochs = 500
 batch_size_train = 512
 batch_size_test = 1000
 learning_rate = 0.001  
@@ -142,7 +142,7 @@ best_test_loss = float('inf')
 best_test_accuracy = 0.0
 no_improvement_counter = 0
 
-print(f"Initial learning rate: {get_lr():.6f}")
+print(f"Initial learning rate: {get_lr():.10f}")
 
 for epoch in range(1, n_epochs + 1):
     train_loss, train_acc = train(epoch)
@@ -153,7 +153,7 @@ for epoch in range(1, n_epochs + 1):
     new_lr = get_lr()
     
     if new_lr != prev_lr:
-        print(fg.yellow + f"Learning rate reduced to: {new_lr:.6f}" + fg.rs)
+        print(fg.yellow + f"Learning rate reduced to: {new_lr:.10f}" + fg.rs)
 
     learning_rates.append(new_lr)
 
@@ -173,7 +173,7 @@ for epoch in range(1, n_epochs + 1):
         no_improvement_counter += 1
         print(fg.yellow + f"No improvement in test loss for {no_improvement_counter} epochs." + fg.rs)
         if no_improvement_counter >= 15:
-            print("Stopping early due to no improvement in test loss.")
+            print(fg.yellow + "Stopping early due to no improvement in test loss." + fg.rs)
             break
 
 save_accuracy_info(model_name, activation_function, best_test_accuracy, epoch)
